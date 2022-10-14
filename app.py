@@ -26,13 +26,10 @@ def create_app():
     def index():
         response = jsonify({"hello": "world"})
         return response
-
     
     # Register lyricsfinder blueprint
     LF_BP = LyricsFinderAPI()
     app.register_blueprint(LF_BP)
-
-    print(app.url_map)
 
 
     return app
