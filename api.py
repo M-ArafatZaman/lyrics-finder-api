@@ -16,109 +16,6 @@ def LyricsFinderAPI():
     GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN")
 
 
-    # Load playlist
-    @api_blueprint.route("/load-playlist/", methods=["get"])
-    @enableCORS
-    def loadPlaylist():
-        '''
-        This endpoint is the first step of the app. It fetches basic playlist data.
-
-        '''
-
-        responseDict = {
-            "status": -1,
-            "message": "Required: 'url' get parameter is missing"
-        }
-
-        ## Try to get url
-        url = request.args.get("url")
-        
-        if url:
-            
-            # Initiate app
-            app = LyricsFinder(CLIENT_ID, CLIENT_SECRET, GENIUS_ACCESS_TOKEN, False)
-
-            # Get ID
-            ID = app.parseSpotifyURL(url.strip())
-
-            # If ID is none, it was an invalid url
-            if ID == None:
-                responseDict["message"] = "Invalid URL"
-
-            # Get playlist detail
-            playlistDetails = app.SpotifyAPI.getPlaylistDetailsByID(ID)
-
-            # Check response
-            if playlistDetails["status"]:
-
-                responseDict["status"] = 200
-                responseDict["message"] = "Successfully loaded playlist"
-                responseDict["data"] = playlistDetails["data"]
-                
-            else:
-                # Response was unsuccessful
-                responseDict["message"] = "Unsuccessful"
-
-        return jsonify(responseDict)
-
-
-    # Search playlist
-    @api_blueprint.route("/search-playlist/", methods=["get"])
-    @enableCORS
-    def searchPlaylist():
-        '''
-        This endpoint is the 2nd step of the app.
-        It takes the URL AND a search term and performs a search.
-        '''
-
-        # The response dict
-        responseDict = {
-            "status": -1,
-            "message": "NULL"
-        }
-
-        # Get query parameters
-        search = request.args.get("search")
-        url = request.args.get("url")
-
-        # Initiate app
-        app = LyricsFinder(CLIENT_ID, CLIENT_SECRET, GENIUS_ACCESS_TOKEN, False)
-
-        # If search exists
-        if search:
-            # Check if search has some valid terms
-            if len(search) <= 0:
-                responseDict["message"] = "Enter search terms"
-        
-        else:
-            # No search parameter
-            responseDict["message"] = "Required: 'search' get parameter is missing."
-
-        # If url exists, and if it is a valid url
-        if url:
-            ID = app.parseSpotifyURL(url)
-
-            if ID == None:
-                responseDict["messagge"] = "Enter a valid URL."
-
-        else:
-            responseDict["message"] = "Required: 'url' get parameter is missing."
-
-
-        # Both url and search is available
-        if search and url:
-            searchResult = app.searchPlaylist(url, search)
-
-            responseDict = {
-                "status": 200,
-                "message": "Successfully scanned playlist",
-                "data": searchResult
-            }
-
-        return jsonify(responseDict)
-
-
-
     # Get genius response time
     @api_blueprint.route("/get-genius-response-time/", methods=["get"])
     @enableCORS
@@ -162,6 +59,105 @@ def LyricsFinderAPI():
         return jsonify({
             "time": int(TOTAL_RESPONSE_TIME * 1000) # In ms
         })
+
+
+    
+    # Load complete playlist with tracks
+    @api_blueprint.route("/load-complete-playlist/", methods=["get"])
+    @enableCORS
+    def loadCompletePlaylist():
+        
+        responseDict = {
+            "status": -1,
+            "message": "Required: 'url' get parameter is missing"
+        }
+
+        url = request.args.get("url")
+
+        if url:
+            
+            # Initiate app
+            app = LyricsFinder(CLIENT_ID, CLIENT_SECRET, GENIUS_ACCESS_TOKEN, False)
+
+            # Try to get ID
+            ID = app.parseSpotifyURL(url)
+
+            # Check if url is valid
+            if not url:
+                responseDict["message"] = "Invalid URL"
+
+            else:
+                # Everything is fine, Proceed with loading playlist
+                playlistResponse = app.loadPlaylist(url)
+
+                if playlistResponse["status"]:
+                # Playlist loaded successfully
+                    responseDict["status"] = 200 
+                    responseDict["message"] = "Successfully loaded playlist"
+                    responseDict["data"] = playlistResponse["data"]
+                
+                else:
+                # Failed to load playlist
+                    responseDict["message"] = playlistResponse["message"]
+
+        
+        return jsonify(responseDict)
+
+
+    # Scan a song for keywords
+    @api_blueprint.route("/scan-song/", methods=["get"])
+    @enableCORS 
+    def scanSong():
+
+        # Get GET parameters
+        songName = request.args.get("songname")
+        artists = request.args.get("artists")
+        keywords = request.args.get("keywords")
+
+        # Check is songname get parameter exists
+        if not songName:
+            return jsonify({
+                "status": -1,
+                "message": "'songname' get parameter is missing."
+            })
+
+        # Check is artists get parameter exists
+        if not artists:
+            return jsonify({
+                "status": -1,
+                "message": "'artists' get parameter is missing."
+            })
+
+        # Check is keywords get parameter exists
+        if not keywords:
+            return jsonify({
+                "status": -1,
+                "message": "'keywords' get parameter is missing."
+            })
+
+        # Initiate app        
+        app = LyricsFinder(CLIENT_ID, CLIENT_SECRET, GENIUS_ACCESS_TOKEN, False)
+
+        scanResponse = app.scanSong(songName, artists, keywords)
+
+        # If there is a response
+        if scanResponse:
+            
+            returnDict = {
+                "status": 200,
+                "message": "Lyrics matched.",
+                "data": scanResponse
+            }
+
+            return jsonify(returnDict)
+        
+        else:
+            # No response
+            return jsonify({
+                "status": 0,
+                "message": "No lyrics found for the given keyword(s)." 
+            })
+
 
 
 

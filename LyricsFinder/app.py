@@ -225,6 +225,132 @@ class LyricsFinder:
         
         return snippet
 
+
+    def loadPlaylist(self, url: str):
+        
+        returnData = {
+            "status": -1,
+            "message": "NULL"
+        }
+
+        # Check if url is valid
+        id = self.parseSpotifyURL(url)
+
+        if not id:
+            returnData["message"] = "Invalid url."
+            return returnData 
+
+        # URL is valid, get playlist data
+        playlistData: ApiResponseLoadPlaylist = self.SpotifyAPI.getPlaylistByID(id)
+        
+        # If status is false, return a failed message
+        if not playlistData["status"]: 
+            returnData["message"] = "Unable to load playlist."
+            return returnData
+        
+        playlistTracks = playlistData["data"]["items"]
+
+        """
+        Each track will be in the following format
+        {
+            name: str [Song name]
+            artists: str [Each artists joined by comma]
+            imageURL: str [The url to each image]
+            url: str [Spotify url] 
+        }
+        """
+        # Track names in str
+        eachTracks: List[str] = []
+
+        # Iterate through each playlist tracks and get the track name
+        for track in playlistTracks:
+            artistsNames = [i["name"] for i in track["track"]["artists"]]
+
+            eachTracks.append({
+                "name": track["track"]["name"],
+                "artists": ', '.join( artistsNames ),
+                "imageURL": track["track"]["album"]["images"][0]["url"],
+                "url": track["track"]["external_urls"]["spotify"]
+            })
+
+        # Store the track name in the items array
+        playlistData["data"]["items"] = eachTracks
+
+        return playlistData
+
+
+    def scanSong(self, songName: str, artists: str, keywords: str):
+        """
+        This function searches for keywords in a song
+        """
+
+        artistsArr = artists.split(",")
+
+        lyricsAndUrl = self.getLyricsAndURL(songName, artistsArr)
+
+        if lyricsAndUrl == None:
+            # Return None if no lyrics is found
+            return None
+        
+        else: 
+            lyrics, geniusURL = lyricsAndUrl
+
+        match: bool = False
+        keywordsMatched: List[str] = []
+
+        # Check if the keyword phrase is present in the lyrics
+        if keywords.lower() in lyrics.lower():
+            # The exact keyword is matched
+            match = True
+            keywordsMatched.append(keywords)
+
+        # If there is still no match, Split keywords at each commas and iterate through keyword
+        if not match:            
+            for keyword in keywords.split(","):
+                if keyword.lower() in lyrics.lower():
+                    # A match has been found
+                    match = True
+                    keywordsMatched.append(keyword)
+
+        result = None
+        # If there is a match
+        if match:
+            '''
+            Preparing return values
+            '''
+            snippet: List[SnippetType] = []
+            # For each keyword(s) matched, generate a snippet
+            for eachKeyword in keywordsMatched:
+                snippet.append({
+                    "keyword": eachKeyword,
+                    "snippet": self.generateSnippet(lyrics, eachKeyword)
+                })
+
+            """ 
+            The response in the following format
+            {
+                "name": str,
+                "artists": str,
+                "lyrics": str,
+                "snippets": [
+                    {
+                        "keyword": str,
+                        "snippet": str
+                    }
+                ],
+                "geniusURL": str
+            }
+            """
+            result = {
+                "name": songName,
+                "artists": artists,
+                "lyrics": lyrics,
+                "snippets": snippet,
+                "geniusURL": geniusURL
+            }
+
+        return result
+
                 
 
 
