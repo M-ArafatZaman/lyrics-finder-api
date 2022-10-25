@@ -159,6 +159,60 @@ def LyricsFinderAPI():
             })
 
 
+    # Search for a song and return the lyrics and url
+    @api_blueprint.route("/get-lyrics/", methods=["get"])
+    @enableCORS 
+    def getLyrics():
+        """
+        This api endpoint searches for lyrics and returns either null if nothing is found
+        Or the lyrics + genius url
+        """
+        returnDict = {
+            "status": -1,
+            "message": "NULL"
+        }
+
+        # Get songName and artists get arguments
+        songName = request.args.get("songname")
+        artists = request.args.get("artists")
+
+        # Check if both args are valid
+        if not songName:
+            returnDict["message"] = "Required 'songname' GET parameter is missing."
+            return jsonify(returnDict)
+
+        if not artists:
+            returnDict["message"] = "Required 'artists' GET parameter is missing."
+            return jsonify(returnDict) 
+        
+        # Both are valid, split artists, load app and get lyrics and genius url
+        artistsArr = artists.split()
+
+        # Initialize app 
+        app = LyricsFinder(CLIENT_ID, CLIENT_SECRET, GENIUS_ACCESS_TOKEN, False)
+
+        lyricsAndURL = app.getLyricsAndURL(songName, artistsArr)
+
+        # If no lyrics are found
+        if lyricsAndURL == None:
+            returnDict["message"] = "No lyrics found."
+            return jsonify(returnDict) 
+
+        else:
+            # SUCCESS
+            lyrics, url = lyricsAndURL
+
+            returnDict = {
+                "status": 200,
+                "message": "Successfully loaded lyrics",
+                "data": {
+                    "lyrics": lyrics,
+                    "geniusURL": url
+                }
+            }
+
+
+        return jsonify(returnDict)
 
 
     return api_blueprint
