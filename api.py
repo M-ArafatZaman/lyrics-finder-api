@@ -90,7 +90,7 @@ def LyricsFinderAPI():
                 # Everything is fine, Proceed with loading playlist
                 playlistResponse = app.loadPlaylist(url)
 
-                if playlistResponse["status"]:
+                if playlistResponse["status"] > 0 or playlistResponse["status"] == True:
                 # Playlist loaded successfully
                     responseDict["status"] = 200 
                     responseDict["message"] = "Successfully loaded playlist"
