@@ -26,6 +26,12 @@ def create_app():
     def index():
         response = jsonify({"hello": "world"})
         return response
+
+    # A route to ping and check if all systems are operational
+    @app.route('/ping/')
+    @enableCORS
+    def ping():
+        return jsonify({"status": "OK"})
     
     # Register lyricsfinder blueprint
     LF_BP = LyricsFinderAPI()
