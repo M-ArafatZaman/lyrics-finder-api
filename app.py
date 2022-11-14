@@ -21,12 +21,6 @@ def create_app():
     # search-playlist/
     # get-genius-response-time/
 
-    @app.route('/')
-    @enableCORS
-    def index():
-        response = jsonify({"hello": "world"})
-        return response
-
     # A route to ping and check if all systems are operational
     @app.route('/ping/')
     @enableCORS
@@ -41,6 +35,12 @@ def create_app():
             'favicon.ico',
             mimetype='image/vnd.microsoft.icon'
         )
+    
+    # The React SPA app
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all(path):
+        return send_from_directory(os.path.join(app.root_path, 'web'), 'index.html')
     
     # Register lyricsfinder blueprint
     LF_BP = LyricsFinderAPI()
