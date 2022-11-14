@@ -32,6 +32,15 @@ def create_app():
     @enableCORS
     def ping():
         return jsonify({"status": "OK"})
+
+    # A route for the icon
+    @app.route('/favicon.ico')
+    def icon():
+        return send_from_directory(
+            os.path.join(app.root_path, 'web'),
+            'favicon.ico',
+            mimetype='image/vnd.microsoft.icon'
+        )
     
     # Register lyricsfinder blueprint
     LF_BP = LyricsFinderAPI()
