@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, make_response, jsonify
+from flask import Flask, jsonify, send_from_directory
 from dotenv import load_dotenv
 import os
 from middlewares import enableCORS
@@ -13,7 +13,7 @@ SECRET_KEY = os.getenv("APP_SECRET_KEY")
 def create_app():
 
     # Setup server
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder="web/static/", static_url_path="/static", template_folder="web")
     app.config["SECRET_KEY"] = SECRET_KEY
 
     BASE_URI = "/lyrics-finder-api/"
